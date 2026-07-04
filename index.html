@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NR1 - Signal d'Attaque</title>
+    <title>NR1 - Attack Signal</title>
     <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -21,21 +21,21 @@
 
     <h1>NR1 🛡️ SIGNAL</h1>
     
-    <!-- Zone Activation Audio (Obligatoire pour les navigateurs) -->
-    <button id="start-btn" class="btn-main" onclick="initAudio()">CLIQUEZ POUR ACTIVER LE SON</button>
+    <!-- Zone Activation Audio -->
+    <button id="start-btn" class="btn-main" onclick="initAudio()">CLICK TO ENABLE AUDIO</button>
 
     <div id="status-box" class="hidden">
-        <div id="status-label">En attente...</div>
+        <div id="status-label">Waiting for signal...</div>
         <div id="timer-text">--</div>
     </div>
 
     <!-- Zone Admin -->
     <div style="margin-top: 40px;">
-        <button onclick="triggerCountdown()" style="background: var(--accent); color: white; padding: 10px; border: none; border-radius: 5px;">LANCER COMPTE À REBOURS (5s)</button>
+        <button onclick="triggerCountdown()" style="background: var(--accent); color: white; padding: 10px; border: none; border-radius: 5px;">START COUNTDOWN (5s)</button>
     </div>
 
     <script>
-        // 1. Initialisation Firebase
+        // 1. Firebase Initialization
         const firebaseConfig = { 
             apiKey: "AIzaSyA8edMWQreJMKrbS8MuowKZl58x7W5vfBU", 
             authDomain: "nr1-vikings.firebaseapp.com", 
@@ -54,7 +54,7 @@
             document.getElementById('status-box').classList.remove('hidden');
         }
 
-        // Fonction Bip
+        // Bip Function
         function playTone(freq, duration) {
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
@@ -67,7 +67,7 @@
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        // 3. Logique de réception
+        // 3. Logic
         signalRef.on('value', (snap) => {
             const targetTime = snap.val();
             if (!targetTime || targetTime === "WAIT") return;
@@ -78,10 +78,10 @@
 
                 if (diff > 0 && diff <= 5000) {
                     document.getElementById('timer-text').innerText = sec;
-                    playTone(440, 0.1); // Bip préparation
+                    playTone(440, 0.1); // Preparation beep
                 } else if (diff <= 0 && diff > -1000) {
                     document.getElementById('timer-text').innerText = "GO!";
-                    playTone(880, 0.8); // Bip final long
+                    playTone(880, 0.8); // Final "GO" long beep
                     clearInterval(interval);
                 } else if (diff < -1000) {
                     document.getElementById('timer-text').innerText = "--";
@@ -90,9 +90,9 @@
             }, 1000);
         });
 
-        // 4. Fonction Admin (déclenchement)
+        // 4. Admin Function
         function triggerCountdown() {
-            // Fixe l'heure cible à +5 secondes par rapport au serveur
+            // Sets target time to +5 seconds from now
             signalRef.set(Date.now() + 5000);
         }
     </script>
