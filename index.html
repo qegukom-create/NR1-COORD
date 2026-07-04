@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NR1 - Signal d'Attaque</title>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #10b981; --danger: #ef4444; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); text-align: center; padding: 20px; }
+        #status-box { background: var(--card); padding: 30px; border-radius: 15px; margin: 20px auto; max-width: 400px; border: 2px solid #334155; }
+        #timer-text { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+        .btn-main { background: var(--danger); color: white; padding: 20px 40px; border: none; border-radius: 10px; font-size: 1.2rem; cursor: pointer; width: 100%; margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>NR1 🛡️ SIGNAL</h1>
+    
+    <!-- Zone Activation Audio (Obligatoire pour les navigateurs) -->
+    <button id="start-btn" class="btn-main" onclick="initAudio()">CLIQUEZ POUR ACTIVER LE SON</button>
+
+    <div id="status-box" class="hidden">
+        <div id="status-label">En attente...</div>
+        <div id="timer-text">--</div>
+    </div>
+
+    <!-- Zone Admin -->
+    <div style="margin-top: 40px;">
+        <button onclick="triggerCountdown()" style="background: var(--accent); color: white; padding: 10px; border: none; border-radius: 5px;">LANCER COMPTE À REBOURS (5s)</button>
+    </div>
+
+    <script>
+        // 1. Initialisation Firebase
+        const firebaseConfig = { 
+            apiKey: "AIzaSyA8edMWQreJMKrbS8MuowKZl58x7W5vfBU", 
+            authDomain: "nr1-vikings.firebaseapp.com", 
+            databaseURL: "https://nr1-vikings-default-rtdb.europe-west1.firebasedatabase.app", 
+            projectId: "nr1-vikings" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const signalRef = db.ref('attaque/countdown');
+
+        // 2. Audio Context
+        let audioCtx;
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('status-box').classList.remove('hidden');
+        }
+
+        // Fonction Bip
+        function playTone(freq, duration) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // 3. Logique de réception
+        signalRef.on('value', (snap) => {
+            const targetTime = snap.val();
+            if (!targetTime || targetTime === "WAIT") return;
+
+            const interval = setInterval(() => {
+                const diff = targetTime - Date.now();
+                const sec = Math.ceil(diff / 1000);
+
+                if (diff > 0 && diff <= 5000) {
+                    document.getElementById('timer-text').innerText = sec;
+                    playTone(440, 0.1); // Bip préparation
+                } else if (diff <= 0 && diff > -1000) {
+                    document.getElementById('timer-text').innerText = "GO!";
+                    playTone(880, 0.8); // Bip final long
+                    clearInterval(interval);
+                } else if (diff < -1000) {
+                    document.getElementById('timer-text').innerText = "--";
+                    clearInterval(interval);
+                }
+            }, 1000);
+        });
+
+        // 4. Fonction Admin (déclenchement)
+        function triggerCountdown() {
+            // Fixe l'heure cible à +5 secondes par rapport au serveur
+            signalRef.set(Date.now() + 5000);
+        }
+    </script>
+</body>
+</html>
